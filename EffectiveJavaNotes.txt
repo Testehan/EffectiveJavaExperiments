@@ -1,0 +1,140 @@
+If you have ever studied a second language yourself and then tried to use it
+outside the classroom, you know that there are three things you must master: how
+the language is structured (grammar), how to name things you want to talk about
+(vocabulary), and the customary and effective ways to say everyday things
+(usage). Too often only the first two are covered in the classroom, and you find
+native speakers constantly suppressing their laughter as you try to make yourself
+understood.
+
+It is much the same with a programming language. You need to understand the
+core language: is it algorithmic, functional, object-oriented? You need to know the
+vocabulary: what data structures, operations, and facilities are provided by the
+standard libraries? And you need to be familiar with the customary and effective
+ways to structure your code. Books about programming languages often cover
+only the first two, or discuss usage only spottily. Maybe that’s because the first
+two are in some ways easier to write about. Grammar and vocabulary are properties of the language alone,
+but usage is characteristic of a community that uses it.
+
+This book addresses your third need: customary and effective usage. Joshua
+Bloch has spent years extending, implementing, and using the Java programming
+language at Sun Microsystems; he has also read a lot of other people’s code,
+including mine. Here he offers good advice, systematically organized, on how to
+structure your code so that it works well, so that other people can understand it, so
+that future modifications and improvements are less likely to cause headaches—
+perhaps, even, so that your programs will be pleasant, elegant, and graceful.
+
+
+I still like Java, though my ardor has cooled a bit as the platform has grown.
+Given its increased size and complexity, the need for an up-to-date best-practices
+guide is all the more critical. With this third edition of Effective Java, I did my
+best to provide you with one. I hope this edition continues to satisfy the need,
+while staying true to the spirit of the first two editions.
+Small is beautiful, but simple ain’t easy.
+
+I naturally think in terms of exported APIs (Application Programming
+Interfaces), and I encourage you to do likewise. Even if you aren’t developing
+reusable components, thinking in these terms tends to improve the quality of the
+software you write
+
+
+===============================================================================================================
+===============================================================================================================
+Chapter 1 - Introduction
+    This book consists of ninety items, each of which conveys one rule. The rules
+    capture practices generally held to be beneficial by the best and most experienced
+    programmers
+
+    Feature                             Items               Release
+    Lambdas                             Items 42–44         Java 8
+    Streams                             Items 45–48         Java 8
+    Optionals                           Item 55             Java 8
+    Default methods in interfaces       Item 21             Java 8
+    try-with-resources                  Item 9              Java 7
+    @SafeVarargs                        Item 32             Java 7
+    Modules                             Item 15             Java 9
+
+!!!
+Most of the rules in this book derive from a few fundamental principles.
+Clarity and simplicity are of paramount importance. The user of a component
+should never be surprised by its behavior.
+Components should be as small as possible but no smaller.
+(As used in this book, the term component refers to any reusable software element, from an individual method
+to a complex framework consisting of multiple packages.) Code should be reused rather than copied. The
+dependencies between components should be kept to a minimum. Errors should
+be detected as soon as possible after they are made, ideally at compile time.
+
+!!!
+While the rules in this book do not apply 100 percent of the time, they do
+characterize best programming practices in the great majority of cases. You
+should not slavishly follow these rules, but violate them only occasionally and
+with good reason. Learning the art of programming, like most other disciplines,
+consists of first learning the rules and then learning when to break them
+
+For the most part, this book uses technical terms as they are defined in The
+Java Language Specification, Java SE 8 Edition [JLS]. A few terms deserve
+special mention. The language supports four kinds of types: interfaces (including
+annotations), classes (including enums), arrays, and primitives. The first three are
+known as reference types. Class instances and arrays are objects; primitive values
+are not. A class’s members consist of its fields, methods, member classes, and
+member interfaces. A method’s signature consists of its name and the types of its
+formal parameters; the signature does not include the method’s return type.
+
+This book uses a few terms differently from The Java Language Specification.
+Unlike The Java Language Specification, this book uses inheritance as a synonym
+for subclassing. Instead of using the term inheritance for interfaces, this book
+simply states that a class implements an interface or that one interface extends
+another. To describe the access level that applies when none is specified, this book
+uses the traditional package-private instead of the technically correct package
+access
+
+This book uses a few technical terms that are not defined in The Java Language Specification. The term exported API,
+or simply API, refers to the classes, interfaces, constructors, members, and serialized forms by which a programmer
+accesses a class, interface, or package.
+
+An exported API consists of the API elements that are accessible outside of the package that defines the API. These are
+the API elements that any client can use and the author of the API commits to support
+
+In Java 9, a module system was added to the platform. If a library makes use of
+the module system, its exported API is the union of the exported APIs of all the
+packages exported by the library’s module declaration.
+
+
+===============================================================================================================
+===============================================================================================================
+Chapter 2 - Creating and destroying objects
+
+Item 1 - consider static factory methods instead of constructors
+
+    example:
+        public static Boolean valueOf(boolean b) {
+            return b ? Boolean.TRUE : Boolean.FALSE;
+        }
+
+    !!!
+    Note that a static factory method is not the same as the Factory Method pattern from Design Patterns. The
+    static factory method described in this item has no direct equivalent in Design Patterns.
+
+    + One advantage of static factory methods is that, unlike constructors, they have names.
+    A class can have only a single constructor with a given signature (Because they have names, static factory methods
+    don’t share the restriction).  In cases where a class seems to require multiple constructors with the same signature,
+    replace the constructors with static factory methods and carefully chosen names to highlight their differences.
+
+    + A second advantage of static factory methods is that, unlike constructors, they are not required to create a new
+    object each time they’re invoked.
+    This technique is similar to the Flyweight pattern. It can greatly improve performance if equivalent
+    objects are requested often, especially if they are expensive to create.
+    The ability of static factory methods to return the same object from repeated
+    invocations allows classes to maintain strict control over what instances exist at
+    any time. Classes that do this are said to be instance-controlled. Instance control allows a class to guarantee that
+    it is a singleton (Item 3) or noninstantiable (Item 4). Also, it allows an immutable value class (Item 17) to make
+    the guarantee that no two equal instances exist: a.equals(b) if and only if a == b. Enum types (Item 34) provide
+    this guarantee.
+
+    +A third advantage of static factory methods is that, unlike constructors, they can return an object of any subtype
+    of their return type.
+    One application of this flexibility is that an API can return objects without making their classes public.
+    Furthermore, using such a static factory method requires the client to refer to the returned object by interface
+    rather than implementation class, which is generally good practice (Item 64).
+
+    +A fourth advantage of static factories is that the class of the returned object can vary from call to call as a
+    function of the input parameters
