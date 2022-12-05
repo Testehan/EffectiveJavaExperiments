@@ -20,7 +20,7 @@ Item 14 - Consider implementing Comparable <br>
 
 ## Chapter 4 - Classes and interfaces
 Item 15 - Minimize the accessibility of classes and members <br>
-Item 16 - In public classes use ccessor methods not public fields <br>
+Item 16 - In public classes use accessor methods not public fields <br>
 Item 17 - Minimize mutability <br>
 Item 18 - Favor composition over inheritance <br>
 Item 19 - Design and document for inheritance or else prohibit it <br>
