@@ -24,6 +24,8 @@ public final class PhoneNumber {
         if (!(o instanceof PhoneNumber))
             return false;
         PhoneNumber pn = (PhoneNumber)o;
+        // as suggested in the Hibernate book you should use getters instead of accessing fields because of the hibernate proxies
+        // of course, this class is not an entity, so this is also fine in this case
         return pn.lineNum == lineNum && pn.prefix == prefix && pn.areaCode == areaCode;
     }
 
