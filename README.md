@@ -36,3 +36,29 @@ Item 26 - Don't use raw types <br>
 Item 27 - Eliminate unchecked warnings <br>
 Item 28 - Prefer lists to arrays <br>
 Item 29 - Favor generic types <br>
+Item 30 - Favor generic methods <br>
+Item 31 - Use bounded wildcards to increase API flexibility <br>
+Item 32 - Combine generics and varargs judiciously <br>
+Item 33 - Consider typesafe heterogeneous containers <br>
+
+## Chapter 6 - Enums and Annotations
+Item 34 - Use enums instead of int constants <br>
+Item 35 - Use instance fields instead of ordinals <br>
+Item 36 - Use EnumSet instead of bit fields <br>
+Item 37 - Use EnumMap instead of ordinal indexing <br>
+Item 38 - Emulate extensible enums with interfaces <br>
+Item 39 - Prefer annotations to naming patterns <br>
+Item 40 - Consistently use the Override annotations <br>
+Item 41 - Use marker interfaces to define types <br>
+
+## Chapter 7 - Lambdas and Streams
+Item 42 - Prefer lambdas to anonymous classes <br>
+Item 43 - Prefer method references to lambdas <br>
+Item 44 - Favor the use of standard functional interfaces <br>
+Item 45 - Use streams judiciously <br>
+Item 46 - Prefer side-effect-free functions in streams <br>
+Item 47 - Prefer Collection to Stream as a return type <br>
+Item 48 - Use caution when making streams parallel <br>
+
+## Chapter 8 - Methods
+Item 49 - Check parameters for validity <br>
