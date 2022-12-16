@@ -62,3 +62,52 @@ Item 48 - Use caution when making streams parallel <br>
 
 ## Chapter 8 - Methods
 Item 49 - Check parameters for validity <br>
+Item 50 - Make defensive copies when needed <br>
+Item 51 - Design method signatures carefully <br>
+Item 52 - Use overloading judiciously <br>
+Item 53 - Use varargs judiciously <br>
+Item 54 - Return empty collections or arrays not nulls <br>
+Item 55 - Return Optionals judiciously <br>
+Item 56 - Write doc comments for all exposed API elements <br>
+
+## Chapter 9 - General programming
+Item 57 - Minimize the scope of local variables <br>
+Item 58 - Prefer for-each loops to traditional for loops <br>
+Item 59 - Know and use the libraries <br>
+Item 60 - Avoid float and double if exact answers are required <br>
+Item 61 - Prefer primitive types to boxed primitives <br>
+Item 62 - Avoid Strings where other types are more appropriate <br>
+Item 63 - Beware the performance of String concatenation <br>
+Item 64 - Refer to objects by their interfaces <br>
+Item 65 - Prefer interfaces to reflection <br>
+Item 66 - Use native methods judiciously <br>
+Item 67 - Optimize judiciously <br>
+Item 68 - Adhere to general accepted naming conventions <br>
+
+## Chapter 10 - Exceptions
+Item 69 - Use exceptions only for exceptional conditions <br>
+Item 70 - Use checked exceptions for recoverable conditions and runtime exceptions for programming errors <br>
+Item 71 - Avoid unnecessary use of checked exceptions <br>
+Item 72 - Favor the use of standard exceptions <br>
+Item 73 - Throw exceptions appropriate to the abstraction <br>
+Item 74 - Document all exceptions thrown by each method <br>
+Item 75 - Include failure-capture information in detail messages <br>
+Item 76 - Strive for failure atomicity <br>
+Item 77 - Don't ignore exceptions <br>
+
+## Chapter 11 - Concurrency
+Item 78 - Synchronize access to shared mutable data <br>
+Item 79 - Avoid excessive synchronization <br>
+Item 80 - Prefer executors , tasks and streams to threads <br>
+Item 81 - Prefer concurrency utilities to wait and notify <br>
+Item 82 - Document thread safety <br>
+Item 83 - Use lazy initialization judiciously <br>
+Item 84 - Don't depend on the thread scheduler <br>
+
+## Chapter 12 - Serialization
+Item 85 - Prefer alternatives to Java Serialization <br>
+Item 86 - Implement Serializable with great caution <br>
+Item 87 - Consider using a custom serialized form <br>
+Item 88 - Write readObject methods defensively <br>
+Item 89 - For instance control, prefer enum types to readResolve <br>
+Item 90 - Consider serialization proxies instead of serialized instances <br>
