@@ -1,6 +1,6 @@
 # EffectiveJavaExperiments
 
-## Chapter 2 - Creating and destroying objects
+## :fire: Chapter 2 - Creating and destroying objects 
 Item 1 - Consider static factory methods instead of constructors.<br>
 Item 2 - Consider a builder when faced with many constructor parameters.<br> 
 Item 3 - Enforce the singleton property with a private constructor or an enum type <br>
@@ -11,7 +11,7 @@ Item 7 - Eliminate obsolete object references <br>
 Item 8 - Avoid finalizers and cleaners <br>
 Item 9 - Prefer try-with-resources to try-finally <br>
 
-## Chapter 3 - Methods common to all objects
+## :fire: Chapter 3 - Methods common to all objects
 Item 10 - Obey the general contract when overriding "equals". <br>
 Item 11 - Always override hashCode when you override equals. <br>
 Item 12 - Always override toString <br>
@@ -172,3 +172,72 @@ Item 9 - Prefer try-with-resources to try-finally <br>
   be closed. The resulting code is shorter and clearer, and the exceptions that it generates are more useful.
   The try-with-resources statement makes it easy to write correct code using resources that
   must be closed, which was practically impossible using try-finally
+
+## Chapter 3 - Methods common to all objects
+Item 10 - Obey the general contract when overriding "equals". <br>
+*  When to not override "equals" ? A :  Each instance of a class is inherently 
+unique, or there is no need for the class to provide a “logical equality” test, 
+or a superclass has already overridden equals and the superclass behavior is appropriate for
+this class, or class is private or package-private and you are certain that its equals method will never be invoked.
+* When is it appropriate to override equals? When a class has a notion of logical equality that differs from
+  mere object identity and a superclass has not already overridden equals. This is generally the case for "value
+  classes".
+* When you override the equals method, you must adhere to its general contract:
+  * Reflexive: For any non-null reference value x, x.equals(x) must return true.
+  * Symmetric: For any non-null reference values x and y, x.equals(y) must return true if and only if
+    y.equals(x) returns true.
+  * Transitive: For any non-null reference values x, y, z, if x.equals(y) returns true and y.equals(z) returns
+    true, then x.equals(z) must return true.
+  * Consistent: For any non-null reference values x and y, multiple invocations of x.equals(y) must consistently
+    return true or consistently return false, provided no information used in equals comparisons is modified.
+  * For any non-null reference value x, x.equals(null) must return false.
+* if you violated the equals contract, you simply don’t know how other objects will behave when confronted with
+  your object.
+* a recipe for a high-quality equals method (see book notes)
+* Google’s open source AutoValue framework
+* having IDEs generate equals (and hashCode) methods is generally preferable to
+  implementing them manually because IDEs do not make careless mistakes, and humans do.
+
+Item 11 - Always override hashCode when you override equals. <br>
+* You must override hashCode in every class that overrides equals. If you fail to do so, your class will violate the
+  general contract for hashCode, which will prevent it from functioning properly
+* Here is the contract, adapted from the Object specification :
+  *  When the hashCode method is invoked on an object repeatedly during an execution of an application, it must
+     consistently return the same value, provided no information used in equals comparisons is modified
+  * If two objects are equal according to the equals(Object) method, then calling hashCode on the two objects must
+    produce the same integer result
+  * If two objects are unequal according to the equals(Object) method, it is not required that calling hashCode
+    on each of the objects must produce distinct results. However, the programmer should be aware that producing
+    distinct results for unequal objects may improve the performance of hash tables.
+* Objects.hash(lineNum, prefix, areaCode);
+* AutoValue framework provides a fine alternative to writing equals and hashCode methods
+  manually, and IDEs also provide some of this functionality.
+Item 12 - Always override toString <br>
+* While it isn’t as critical as obeying the equals and hashCode contracts (Items 10 and 11), providing a good toString
+  implementation makes your class much more pleasant to use and makes systems using the class easier to debug.
+* Google’s open source AutoValue facility, discussed in Item 10, will generate a toString method for you, as will
+  most IDEs.
+
+Item 13 - Override clone judiciously  (with good judgement or sense.) <br>
+* Though the specification doesn’t say it, in practice, a class implementing Cloneable is expected to provide a
+  properly functioning public clone method. In order to achieve this, the class and all of its superclasses must obey
+  a complex, unenforceable, thinly documented protocol. The resulting mechanism is fragile, dangerous, and
+  extralinguistic: it creates objects without calling a constructor.
+* A better approach to object copying is to provide a copy constructor or copy factory
+* Given all the problems associated with Cloneable, new interfaces should not extend it, and new extendable classes
+  should not implement it.
+
+Item 14 - Consider implementing Comparable <br>
+* By implementing Comparable, you allow your class to interoperate with all of the many generic algorithms and
+  collection implementations that depend on this interface. You gain a tremendous amount of power for a small amount
+  of effort. 
+* The general contract of the compareTo method is similar to that of equals (see book notes)
+* If a class has multiple significant fields, the order in which you compare them is critical.
+  Start with the most significant field and work your way down.
+* whenever you implement a "value class" that has a sensible ordering, you should have the class implement
+  the Comparable interface so that its instances can be easily sorted, searched, and used in comparison-based
+  collections. When comparing field values in the implementations of the compareTo methods, avoid the use of the
+  < and > operators. Instead, use the static compare methods in the boxed primitive classes or the comparator
+  construction methods in the Comparator interface
+
+TODO Continue the details list
