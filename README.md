@@ -1,7 +1,7 @@
 # EffectiveJavaExperiments
 
 ## Chapter 2 - Creating and destroying objects
-Item 1 - consider static factory methods instead of constructors.<br>
+Item 1 - Consider static factory methods instead of constructors.<br>
 Item 2 - Consider a builder when faced with many constructor parameters.<br> 
 Item 3 - Enforce the singleton property with a private constructor or an enum type <br>
 Item 4 - Enforce non instantiability with a private constructor <br>
@@ -111,3 +111,64 @@ Item 87 - Consider using a custom serialized form <br>
 Item 88 - Write readObject methods defensively <br>
 Item 89 - For instance control, prefer enum types to readResolve <br>
 Item 90 - Consider serialization proxies instead of serialized instances <br>
+
+
+# More details on items
+## Chapter 2 - Creating and destroying objects
+Item 1 - Consider static factory methods instead of constructors.<br>
+* static factory methods, unlike constructors, they have names
+* static factory methods, unlike constructors, are not required to create a new
+  object each time they’re invoked
+* static factory methods, unlike constructors, they can return an object of any subtype
+  of their return type
+* static factories is that the class of the returned object need not exist when the class
+  containing the method is written
+
+Item 2 - Consider a builder when faced with many constructor parameters.<br> 
+* In summary, the Builder pattern is a good choice when designing classes whose constructors or static
+  factories would have more than a handful of parameters, especially if many of the parameters are optional or
+  of identical type.
+
+Item 3 - Enforce the singleton property with a private constructor or an enum type <br>
+*  Presents 3 ways to create a singleton
+
+Item 4 - Enforce non instantiability with a private constructor <br>
+* Because the explicit constructor is private, it is inaccessible outside the class.
+  The AssertionError isn’t strictly required, but it provides insurance in case the
+  constructor is accidentally invoked from within the class. It guarantees the class
+  will never be instantiated under any circumstances.
+
+Item 5 - Prefer dependency injection to hardwiring resources <br>
+* This practice, known as dependency injection, will greatly enhance the flexibility, reusability, and testability of a class.
+
+Item 6 - Avoid creating unnecessary objects (when you can reuse existing ones) <br>
+*  String s = new String("bikini"); // DON'T DO THIS!
+* You can often avoid creating unnecessary objects by using static factory methods (Item 1) in preference to
+  constructors on immutable classes that provide both.
+* Another way to create unnecessary objects is autoboxing, which allows the programmer to mix primitive and boxed
+  primitive types, boxing and unboxing automatically as needed.
+* The lesson is clear: prefer primitives to boxed primitives, and watch out for unintentional autoboxing.
+
+Item 7 - Eliminate obsolete object references <br>
+* If an object reference is unintentionally retained, not only is that object excluded from garbage collection, but so
+  too are any objects referenced by that object, and so on.
+* The fix for this sort of problem is simple: null out references once they become obsolete. (Nulling out object references should be the exception rather than the norm.)
+* The best way to eliminate an obsolete reference is to let the variable that contained the reference fall out of scope.
+  This occurs naturally if you define each variable in the narrowest possible scope (Item 57).
+* So when should you null out a reference? What aspect of a class makes it susceptible to memory leaks?
+  Generally speaking, whenever a class manages its own memory, the programmer should be alert for memory leaks.
+  
+Item 8 - Avoid finalizers and cleaners <br>
+* Just have your class implement AutoCloseable, and require its clients
+  to invoke the close method on each instance when it is no longer needed,
+  typically using try-with-resources to ensure termination even in the face of
+  exceptions
+*  In summary, don’t use cleaners, or in releases prior to Java 9, finalizers,
+   except as a safety net or to terminate noncritical native resources. Even then,
+   beware the indeterminacy and performance consequences
+
+Item 9 - Prefer try-with-resources to try-finally <br>
+* Always use try-with-resources in preference to try finally when working with resources that must
+  be closed. The resulting code is shorter and clearer, and the exceptions that it generates are more useful.
+  The try-with-resources statement makes it easy to write correct code using resources that
+  must be closed, which was practically impossible using try-finally
