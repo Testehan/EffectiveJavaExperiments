@@ -240,4 +240,181 @@ Item 14 - Consider implementing Comparable <br>
   < and > operators. Instead, use the static compare methods in the boxed primitive classes or the comparator
   construction methods in the Comparator interface
 
+## Chapter 4 - Classes and interfaces
+Item 15 - Minimize the accessibility of classes and members <br>
+* The rule of thumb is simple: make each class or member as inaccessible as
+  possible. In other words, use the lowest possible access level consistent with the
+  proper functioning of the software that you are writing.
+* To facilitate testing your code, you may be tempted to make a class, interface, or member more accessible than
+  otherwise necessary. This is fine up to a point. It is acceptable to make a private member of a public class
+  package-private in order to test it, but it is not acceptable to raise the accessibility any higher. In other
+  words, it is not acceptable to make a class, interface, or member a part of a package’s exported API to
+  facilitate testing.
+* The same advice applies to static fields, with one exception. You can expose constants via public static final
+  fields, assuming the constants form an integral part of the abstraction provided by the class. By convention,
+  such fields have names consisting of capital letters, with words separated by underscores (Item 68). It is
+  critical that these fields contain either primitive values or references to immutable objects (Item 17). a field
+  containing a reference to a mutable object has all the disadvantages of a nonfinal field. While the reference
+  cannot be modified, the referenced object can be modified—with disastrous results.
+* To summarize, you should reduce accessibility of program elements as much
+  as possible (within reason). After carefully designing a minimal public API, you
+  should prevent any stray classes, interfaces, or members from becoming part of
+  the API. With the exception of public static final fields, which serve as constants,
+  public classes should have no public fields. Ensure that objects referenced by
+  public static final fields are immutable.
+  
+Item 16 - In public classes use accessor methods not public fields <br>
+* In summary, public classes should never expose mutable fields. It is less
+harmful, though still questionable, for public classes to expose immutable fields.
+It is, however, sometimes desirable for package-private or private nested classes to
+expose fields, whether mutable or immutable.
+
+Item 17 - Minimize mutability <br>
+* Immutable classes are easier to design, implement, and use than mutable classes. They are
+  less prone to error and are more secure. 
+* To make a class immutable, follow these five rules:
+  1. Don’t provide methods that modify the object’s state (known as mutators).
+  2. Ensure that the class can’t be extended.
+  3. Make all fields final. 
+  4. Make all fields private.
+  5. Ensure exclusive access to any mutable components. 
+* Immutable objects are inherently thread-safe; they require no synchronization. They cannot be corrupted by multiple
+  threads accessing them concurrently. This is far and away the easiest approach to achieve thread safety. Since no
+  thread can ever observe any effect of another thread on an immutable object, immutable objects can be shared freely.
+* To summarize, resist the urge to write a setter for every getter. Classes should be immutable unless there’s a very
+  good reason to make them mutable.
+  Immutable classes provide many advantages, and their only disadvantage is the potential for performance problems
+  under certain circumstances.
+  There are some classes for which immutability is impractical. If a class cannot be made immutable, limit its mutability
+  as much as possible. Reducing the number of states in which an object can exist makes it easier to reason about
+  the object and reduces the likelihood of errors. Therefore, make every field final unless there is a compelling
+  reason to make it nonfinal. Combining the advice of this item with that of Item 15, your natural inclination should
+  be to declare every field private final unless there’s a good reason to do otherwise
+  Constructors should create fully initialized objects with all of their invariants established. Don’t provide a public
+  initialization method separate from the constructor or static factory unless there is a compelling reason to do so.
+  Similarly, don’t provide a “reinitialize” method that enables an object to be reused as if it
+  had been constructed with a different initial state.
+
+Item 18 - Favor composition over inheritance <br>
+* Inheritance is a powerful way to achieve code reuse, but it is not always the best tool for the job. Used
+  inappropriately, it leads to fragile software. It is safe to use inheritance within a package, where the subclass
+  and the superclass implementations are under the control of the same programmers. It is also safe to use inheritance
+  when extending classes specifically designed and documented for extension (Item 19).
+* Inheriting from ordinary concrete classes across package boundaries, however, is dangerous.
+  As a reminder, this book uses the word “inheritance” to mean implementation inheritance (when one class extends
+  another). The problems discussed in this item do not apply to interface inheritance (when a class implements an
+  interface or when one interface extends another).
+* Luckily, there is a way to avoid all of the problems described above. Instead of extending an existing class, give
+  your new class a private field that references an instance of the existing class. This design is called composition
+  because the existing class becomes a component of the new one. Each instance method in the new class invokes the
+  corresponding method on the contained instance of the existing class and returns the results. This is known as
+  forwarding, and the methods in the new class are known as forwarding methods. The resulting class will be rock
+  solid, with no dependencies on the implementation details of the existing class.
+* To summarize, inheritance is powerful, but it is problematic because it violates encapsulation.
+  It is appropriate only when a genuine subtype relationship exists between the subclass and the superclass. Even then,
+  inheritance may lead to fragility if the subclass is in a different package from the superclass and the
+  superclass is not designed for inheritance. To avoid this fragility, use composition and forwarding instead of
+  inheritance, especially if an appropriate interface to implement a wrapper class exists. Not only are wrapper classes
+  more robust than subclasses, they are also more powerful.
+
+Item 19 - Design and document for inheritance or else prohibit it <br>
+* First, the class must document precisely the effects of overriding any method.
+  In other words, the class must document its self-use of overridable methods.
+  For each public or protected method, the documentation must indicate which overridable methods the method invokes,
+  in what sequence, and how the results of each invocation affect subsequent processing.
+  (By overridable, we mean nonfinal and either public or protected.) More generally, a class must document any
+  circumstances under which it might invoke an overridable method.
+  For example, invocations might come from background threads or static initializers.
+* There are a few more restrictions that a class must obey to allow inheritance.
+  Constructors must not invoke overridable methods, directly or indirectly. If you violate this rule, program failure
+  will result. The superclass constructor runs before the subclass constructor, so the overriding method in the
+  subclass will get invoked before the subclass constructor has run. If the overriding method depends
+  on any initialization performed by the subclass constructor, the method will not behave as expected.
+* Note that it is safe to invoke private methods, final methods, and static methods, none of which are overridable,
+  from a constructor
+* The best solution to this problem is to prohibit subclassing in classes that are not designed and documented to be
+  safely subclassed. There are two ways to prohibit subclassing. The easier of the two is to declare the class final. The
+  alternative is to make all the constructors private or package-private and to add public static factories in place
+  of the constructors. This alternative, which provides the flexibility to use subclasses internally, is discussed in
+  Item 17. Either approach is acceptable.
+* Unless you know there is a real need for subclasses, you are probably better off prohibiting inheritance by declaring
+  your class final or ensuring that there are no accessible constructors. If you really need inheritance,
+  you must document all of its self-use patterns, and once you’ve documented them, you must commit to
+  them for the life of the class.
+Item 20 - Prefer interfaces to abstract classes <br>
+* To summarize, an interface is generally the best way to define a type that permits multiple implementations. If you
+  export a nontrivial interface, you should strongly consider providing a skeletal implementation to go with it. To
+  the extent possible, you should provide the skeletal implementation via default methods on the interface so that
+  all implementors of the interface can make use of it. That said, restrictions on interfaces typically mandate that
+  a skeletal implementation take the form of an abstract class.
+Item 21 - Design interfaces for posterity <br>
+* The declaration for a default method includes a default implementation that is used by all classes that implement
+  the interface but do not implement the default method. While the addition of default methods to Java makes it possible
+  to add methods to an existing interface, there is no guarantee that these methods will work in all preexisting
+  implementations. Default methods are “injected” into existing implementations without the knowledge or consent of
+  their implementors. Before Java 8, these implementations were written with the tacit understanding that their interfaces
+  would never acquire any new methods.
+* Using default methods to add new methods to existing interfaces should be
+  avoided unless the need is critical, in which case you should think long and hard
+  about whether an existing interface implementation might be broken by your
+  default method implementation.
+* Therefore, it is critically important to test each new interface before you release it. Multiple programmers should
+  implement each interface in different ways. At a minimum, you should aim for three diverse implementations. Equally
+  important is to write multiple client programs that use instances of each new interface to perform various tasks.
+  This will go a long way toward ensuring that each interface satisfies all of its intended uses. These steps will
+  allow you to discover flaws in interfaces before they are released, when you can still correct them easily. While
+  it may be possible to correct some interface flaws after an interface is released, you cannot count on it.
+Item 22 - Use interfaces only to define types <br>
+* One kind of interface that fails this test is the so-called constant interface. Such an interface contains no methods;
+  it consists solely of static final fields, each exporting a constant.
+* In summary, interfaces should be used only to define types. They should not be used merely to export constants
+Item 23 - Prefer class hierarchies to tagged classes <br>
+* In summary, tagged classes (whose instances come in two or more flavors and contain a tag field
+  indicating the flavor of the instance) are seldom appropriate. If you’re tempted to write a class with an explicit tag field,
+  think about whether the tag could be eliminated and the class replaced by a hierarchy. When you encounter an existing
+  class with a tag field, consider refactoring it into a hierarchy
+Item 24 - Favor static member classes over nonstatic <br>
+* A nested class is a class defined within another class. A nested class should exist only to serve its enclosing
+  class. If a nested class would be useful in some other context, then it should be a top-level class. There are four
+  kinds of nested classes: static member classes, nonstatic member classes, anonymous classes, and local
+  classes. All but the first kind are known as inner classes. This item tells you when to use which kind of nested
+  class and why.
+* Despite the syntactic similarity, these two kinds of nested classes are very different. Each instance of a nonstatic
+  member class is implicitly associated with an enclosing instance of its containing class. Within instance methods of
+  a nonstatic member class, you can invoke methods on the enclosing instance or obtain a reference to the enclosing
+  instance using the qualified "this" construct. If an instance of a nested class can exist in isolation from an
+  instance of its enclosing class, then the nested class must be a static member class: it is impossible to create
+  an instance of a nonstatic member class without an enclosing instance
+* If you declare a member class that does not require access to an enclosing instance, always put the "static" modifier
+  in its declaration, making it a static rather than a nonstatic member class.
+  If you omit this modifier, each instance will have a hidden extraneous reference to its enclosing instance. As
+  previously mentioned, storing this reference takes time and space. More seriously, it can result in
+  the enclosing instance being retained when it would otherwise be eligible for garbage collection (Item 7). The
+  resulting memory leak can be catastrophic. It is often difficult to detect because the reference is invisible.
+* An anonymous class has no name. It is not a member of its enclosing class. Rather than being declared along with
+  other members, it is simultaneously declared and instantiated at the point of use. Anonymous classes
+  are permitted at any point in the code where an expression is legal. Anonymous classes have enclosing instances if
+  and only if they occur in a nonstatic context.
+  But even if they occur in a static context, they cannot have any static members other than constant variables, which
+  are final primitive or string fields initialized to constant expressions
+* Before lambdas were added to Java (Chapter 6), anonymous classes were the preferred means of creating small function
+  objects and process objects on the fly, but lambdas are now preferred (Item 42). Another common use of anonymous
+  classes is in the implementation of static factory methods
+* To recap, there are four different kinds of nested classes, and each has its
+  place. If a nested class needs to be visible outside of a single method or is too long
+  to fit comfortably inside a method, use a member class. If each instance of a member class needs a reference to its
+  enclosing instance, make it nonstatic; otherwise,
+  make it static. Assuming the class belongs inside a method, if you need to create
+  instances from only one location and there is a preexisting type that characterizes
+  the class, make it an anonymous class; otherwise, make it a local class
+Item 25 - Limit source files to a single top level class <br>
+* The lesson is clear: Never put multiple top-level classes or interfaces in a single source file. Following this rule
+  guarantees that you can’t have multiple definitions for a single class at compile time. This in turn guarantees that
+  the class files generated by compilation, and the behavior of the resulting program, are independent of the order in
+  which the source files are passed to the compiler.
+
+  
+
 TODO Continue the details list
+
+
