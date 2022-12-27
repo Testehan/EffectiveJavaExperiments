@@ -424,7 +424,7 @@ Item 25 - Limit source files to a single top level class <br>
 Item 26 - Don't use raw types <br>
 * A class or interface whose declaration has one or more type parameters is a generic class or interface.
   For example, the List interface has a single type parameter, E, representing its element type. The
-  full name of the interface is List<E> (read “list of E”), but people often call it List
+  full name of the interface is List< E > (read “list of E”), but people often call it List
   for short. Generic classes and interfaces are collectively known as generic types.
 * Each generic type defines a raw type, which is the name of the generic type used without any accompanying
   type parameters. For example, the raw type corresponding to List<E> is List. Raw types behave as if all of the
@@ -432,30 +432,30 @@ Item 26 - Don't use raw types <br>
 * As noted earlier, it is legal to use raw types (generic types without their type parameters), but you should never
   do it. If you use raw types, you lose all the  safety and expressiveness benefits of generics.
 * While you shouldn’t use raw types such as List, it is fine to use types that are parameterized to allow insertion of
-  arbitrary objects, such as List<Object>.
+  arbitrary objects, such as List< Object >.
 * you lose type safety if you use a raw type such as List, but not if you use a parameterized type
-  such as List<Object>
+  such as List< Object >
 * In summary, using raw types can lead to exceptions at runtime, so don’t use them. They are provided only for compatibility
-  and interoperability with legacy code that predates the introduction of generics. As a quick review, Set<Object> is
+  and interoperability with legacy code that predates the introduction of generics. As a quick review, Set< Object > is
   a parameterized type representing a set that can contain objects of any type, Set<?> is a wildcard type representing
   a set that can contain only objects of some unknown type, and Set is a raw type, which opts out of the generic type system.
   The first two are safe, and the last is not.
 
 Table with generic examples
 
-| Term                    | Example                     |
-|-------------------------|-----------------------------|
-| Parameterized type      | List<String>                |
-| Actual type parameter   | String                      |
-| Generic type            | List<E>                     |
-| Formal type parameter   | E                           |
-| Unbounded wildcard type | List<?>                     |
-| Raw type                | List                        |
-| Bounded type parameter  | < E extends Number>         |
-| Recursive type bound    | <T extends Comparable<T>>   |
-| Bounded wildcard type   | List<? extends Number>      |
-| Generic method static   | <E> List<E> asList(E[] a)   |
-| Type token              | String.class                |
+| Term                    | Example                                 |
+|-------------------------|-----------------------------------------|
+| Parameterized type      | List< String >                          |
+| Actual type parameter   | String                                  |
+| Generic type            | List< E >                               |
+| Formal type parameter   | E                                       |
+| Unbounded wildcard type | List< ? >                               |
+| Raw type                | List                                    |
+| Bounded type parameter  | < E extends Number>                     |
+| Recursive type bound    | <T extends Comparable< T > >            |
+| Bounded wildcard type   | List<? extends Number>                  |
+| Generic method static   | < E > List< E > asList(E[] a)           |
+| Type token              | String.class                            |
 
 Item 27 - Eliminate unchecked warnings <br>
 * Some warnings will be much more difficult to eliminate. This chapter is filled with examples of such warnings. When
@@ -505,17 +505,17 @@ Item 30 - Favor generic methods <br>
   whose use requires casts. This makes life easier for new users without breaking existing clients (Item 26).
 
 Item 31 - Use bounded wildcards to increase API flexibility <br>
-* parameterized types are invariant. In other words, for any two distinct types Type1 and Type2, List<Type1> is
-  neither a subtype nor a supertype of List<Type2>. Although it is counterintuitive that List<String> is
-  not a subtype of List<Object>, it really does make sense. You can put any object
-  into a List<Object>, but you can put only strings into a List<String>. Since a
-  List<String> can’t do everything a List<Object> can, it isn’t a subtype (by the Liskov substitution principal, Item 10).
+* parameterized types are invariant. In other words, for any two distinct types Type1 and Type2, List< Type1 > is
+  neither a subtype nor a supertype of List< Type2 >. Although it is counterintuitive that List< String > is
+  not a subtype of List< Object >, it really does make sense. You can put any object
+  into a List< Object >, but you can put only strings into a List< String >. Since a
+  List< String > can’t do everything a List< Object > can, it isn’t a subtype (by the Liskov substitution principal, Item 10).
 * The lesson is clear. For maximum flexibility, use wildcard types on input parameters that represent producers or
   consumers. If an input parameter is both a producer and a consumer, then wildcard types will do you no good: you
   need an exact type match, which is what you get without any wildcards. Here is a mnemonic to help you remember which
   wildcard type to use:
   !!!!       PECS stands for producer-extends, consumer-super.
-* Note that the return type is still Set<E>. Do not use bounded wildcard types as return types. Rather than providing
+* Note that the return type is still Set< E >. Do not use bounded wildcard types as return types. Rather than providing
   additional flexibility for your users, it would force them to use wildcard types in client code.
   Properly used, wildcard types are nearly invisible to the users of a class. They cause methods to accept the
   parameters they should accept and reject those they should reject.
@@ -543,7 +543,10 @@ Item 33 - Consider typesafe heterogeneous containers <br>
    container. You can use Class objects as keys for such typesafe heterogeneous
    containers. A Class object used in this fashion is called a type token.
 
-TODO Continue the details list  (identation got messed up after adding the table not sure
-how to fix it..)
+TODO Continue the details list  (identation was fixed from what it seems...it wAS caused
+by generics brackets like < > ..i added some spaces and that seemed to fixed it)
+
+
+
 
 
