@@ -543,6 +543,109 @@ Item 33 - Consider typesafe heterogeneous containers <br>
    container. You can use Class objects as keys for such typesafe heterogeneous
    containers. A Class object used in this fashion is called a type token.
 
+
+## Chapter 6 - Enums and Annotations
+Item 34 - Use enums instead of int constants <br>
+* The basic idea behind Java’s enum types is simple: they are classes that export one instance for each enumeration
+  constant via a public static final field.
+* This technique, known as the int enum pattern, has many shortcomings. It provides nothing in the way of type safety
+  and little in the way of expressive power. The compiler won’t complain if you pass an apple to a method that expects
+  an orange, compare apples to oranges with the == operator
+* Enums provide compile-time type safety. If you declare a parameter to be of type Apple, you are guaranteed that
+  any non-null object reference passed to the parameter is one of the three valid Apple values.
+* It is easy to write a rich enum type such as Planet (see code examples). To associate data with
+  enum constants, declare instance fields and write a constructor that takes the
+  data and stores it in the fields. Enums are by their nature immutable, so all fields
+  should be final (Item 17). Fields can be public, but it is better to make them private
+  and provide public accessors (Item 16).
+* So when should you use enums? Use enums any time you need a set of constants whose members are known at compile time.
+  It is not necessary that the set of constants in an enum type stay fixed for all time. The enum feature was specifically
+  designed to allow for binary compatible evolution of enum types.
+*  In summary, the advantages of enum types over int constants are compelling.
+   Enums are more readable, safer, and more powerful. Many enums require no
+   explicit constructors or members, but others benefit from associating data with
+   each constant and providing methods whose behavior is affected by this data.
+   Fewer enums benefit from associating multiple behaviors with a single method. In
+   this relatively rare case, prefer constant-specific methods to enums that switch on
+   their own values. Consider the strategy enum pattern if some, but not all, enum
+   constants share common behaviors
+
+Item 35 - Use instance fields instead of ordinals <br>
+* The Enum specification has this to say about ordinal: “Most programmers will have no use for this method. It is
+  designed for use by general-purpose enumbased data structures such as EnumSet and EnumMap.” Unless you are writing code
+  with this character, you are best off avoiding the ordinal method entirely.
+
+Item 36 - Use EnumSet instead of bit fields <br>
+* In summary, just because an enumerated type will be used in sets, there is no reason to represent it with bit fields.
+  The EnumSet class combines the conciseness and performance of bit fields with all the many advantages of enum types
+  described in Item 34. The one real disadvantage of EnumSet is that it is not, as of Java 9, possible to create an
+  immutable EnumSet, but this will likely be remedied in an upcoming release. In the meantime, you can wrap an EnumSet with
+  Collections.unmodifiableSet, but conciseness and performance will suffer.
+
+Item 37 - Use EnumMap instead of ordinal indexing <br>
+* More specifically, there is a very fast Map implementation designed for use with enum keys, known as java.util.EnumMap.
+* In summary, it is rarely appropriate to use ordinals to index into arrays: use EnumMap instead. If the relationship
+  you are representing is multidimensional, use EnumMap<..., EnumMap<...>>. This is a special case of the general principle
+  that application programmers should rarely, if ever, use Enum.ordinal (Item 35)  
+
+Item 38 - Emulate extensible enums with interfaces <br>
+* In summary, while you cannot write an extensible enum type, you can
+  emulate it by writing an interface to accompany a basic enum type that
+  implements the interface. This allows clients to write their own enums (or other
+  types) that implement the interface. Instances of these types can then be used
+  wherever instances of the basic enum type can be used, assuming APIs are written
+  in terms of the interface.
+
+Item 39 - Prefer annotations to naming patterns <br>
+* There is simply no reason to use naming patterns when you can use annotations instead.
+  That said, with the exception of toolsmiths, most programmers will have no need to define annotation types.
+  But all programmers should use the predefined annotation types that Java provides (Items 40, 27).
+  Also, consider using the annotations provided by your IDE or static analysis tools. Such annotations can
+  improve the quality of the diagnostic information provided by these tools. Note,
+  however, that these annotations have yet to be standardized, so you may have
+  some work to do if you switch tools or if a standard emerges.
+
+Item 40 - Consistently use the Override annotations <br>
+* Therefore, you should use the Override annotation on every method declaration that you believe to override a superclass
+  declaration. There is one minor exception to this rule. If you are writing a class that is not labeled abstract and you
+  believe that it overrides an abstract method in its superclass, you needn’t bother
+  putting the Override annotation on that method. In a class that is not declared
+  abstract, the compiler will emit an error message if you fail to override an abstract superclass method.
+* In an abstract class or an interface, however, it is worth annotating all methods
+  that you believe to override superclass or superinterface methods, whether concrete or abstract. For example, the Set
+  interface adds no new methods to the Collection interface, so it should include Override annotations on all of its
+  method declarations to ensure that it does not accidentally add any new methods to the Collection interface
+* In summary, the compiler can protect you from a great many errors if you use
+  the Override annotation on every method declaration that you believe to override
+  a supertype declaration, with one exception. In concrete classes, you need not
+  annotate methods that you believe to override abstract method declarations
+  (though it is not harmful to do so).
+
+Item 41 - Use marker interfaces to define types <br>
+* You may hear it said that marker annotations (Item 39) make marker interfaces obsolete. This assertion is incorrect.
+  Marker interfaces have two advantages over marker annotations. First and foremost, marker interfaces define a type
+  that is implemented by instances of the marked class; marker annotations do not. The existence of a marker interface
+  type allows you to catch errors at compile time that you couldn’t catch until runtime if you used a marker annotation
+  Compile-time error detection is the intent of marker interfaces (unfortunately Serializable is not a good example
+  because the writers of the API did not take advantage of this when they wrote the code for ObjectOutputStream.write,
+  whose parameter should have been a Serializable, not an Object, and thus it would have detected if an object that
+  is not a Serializable is passed to that method at compile time not at run time as it happens now:/ )
+* So when should you use a marker annotation and when should you use a marker interface? Clearly you must use an
+  annotation if the marker applies to any program element other than a class or interface, because only classes and
+  interfaces can be made to implement or extend an interface. If the marker applies only to classes and interfaces,
+  ask yourself the question “Might I want to write one or more methods that accept only objects that have this
+  marking?” If so, you should use a marker interface in preference to an annotation. This will make it possible
+  for you to use the interface as a parameter type for the methods in question, which will result in the benefit of
+  compile-time type checking. If you can convince yourself that you’ll never want to write a method that accepts only
+  objects with the marking, then you’re probably better off using a marker annotation. If, additionally, the marking
+  is part of a framework that makes heavy use of annotations, then a marker annotation is the clear choice.
+* In a sense, this item is the inverse of Item 22, which says, “If you don’t want to define a type, don’t use an
+  interface.” To a first approximation, this item says, “If you do want to define a type, do use an interface.”
+
+
+
+
+
 TODO Continue the details list  (identation was fixed from what it seems...it wAS caused
 by generics brackets like < > ..i added some spaces and that seemed to fixed it)
 
