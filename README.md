@@ -642,7 +642,168 @@ Item 41 - Use marker interfaces to define types <br>
 * In a sense, this item is the inverse of Item 22, which says, “If you don’t want to define a type, don’t use an
   interface.” To a first approximation, this item says, “If you do want to define a type, do use an interface.”
 
+## Chapter 7 - Lambdas and Streams
+Item 42 - Prefer lambdas to anonymous classes <br>
+* In Java 8, the language formalized the notion that interfaces with a single abstract method are special and deserve
+  special treatment. These interfaces are now known as functional interfaces, and the language allows you to create
+  instances of these interfaces using lambda expressions, or lambdas for short.
+* Omit the types of all lambda parameters unless their presence makes your program clearer.
+  If the compiler generates an error telling you it can’t infer the type of a lambda parameter, then specify it
+* Item 26 tells you not to use raw types, Item 29 tells you to favor generic types, and Item 30 tells you to
+  favor generic methods. This advice is doubly important when you’re using lambdas, because the compiler obtains most
+  of the type information that allows it to perform type inference from generics. If you don’t provide this information, the
+  compiler will be unable to do type inference, and you’ll have to specify types manually in your lambdas, which will
+  greatly increase their verbosity.
+* Unlike methods and classes, lambdas lack names and documentation; if a computation isn’t self-explanatory, or
+  exceeds a few lines, don’t put it in a lambda
+* One line is ideal for a lambda, and three lines is a reasonable maximum.
+  If you violate this rule, it can cause serious harm to the readability of your programs. If a lambda is long or
+  difficult to read, either find a way to simplify it or refactor your program to eliminate it.
+* Likewise, you might think that anonymous classes are obsolete in the era of lambdas. This is closer to the truth,
+  but there are a few things you can do with anonymous classes that you can’t do with lambdas. Lambdas are limited to
+  functional interfaces. If you want to create an instance of an abstract class, you can do it with an anonymous class,
+  but not a lambda. Similarly, you can use anonymous classes to create instances of interfaces with multiple abstract
+  methods. Finally, a lambda cannot obtain a reference to itself. In a lambda, the this keyword refers to
+  the enclosing instance, which is typically what you want. In an anonymous class, the this keyword refers to the
+  anonymous class instance. If you need access to the function object from within its body, then you must use an
+  anonymous class
+* In summary, as of Java 8, lambdas are by far the best way to represent small function objects. Don’t use anonymous
+  classes for function objects unless you have to create instances of types that aren’t functional interfaces. Also,
+  remember that lambdas make it so easy to represent small function objects that it opens the door to functional
+  programming techniques that were not previously practical in Java.
 
+Item 43 - Prefer method references to lambdas <br>
+* In some lambdas, however, the parameter names you choose provide useful documentation, making the lambda more
+  readable and maintainable than a method reference, even if the lambda is longer.
+* That said, method references usually result in shorter, clearer code. They also give you an out if a lambda gets too
+  long or complex: You can extract the code from the lambda into a new method and replace the lambda with a reference
+  to that method. You can give the method a good name and document it to your heart’s content
+* In summary, method references often provide a more succinct alternative to lambdas. Where method references are
+  shorter and clearer, use them; where they aren’t, stick with lambdas.
+
+Item 44 - Favor the use of standard functional interfaces <br>
+* If one of the standard functional interfaces does the job, you should generally use it in preference to a purpose-built
+  functional interface. This will make your API easier to learn, by reducing its conceptual surface area, and will provide
+  significant interoperability benefits, as many of the standard functional interfaces provide useful default methods.
+* There are forty-three interfaces in java.util.Function. You can’t be expected to remember them all, but if you
+  remember six basic interfaces, you can derive the rest when you need them. The basic interfaces operate on object
+  reference types.
+  1. The Operator interfaces represent functions whose result and argument types are the same
+  2. The Predicate interface represents a function that takes an argument and returns a boolean.
+  3. The Function interface represents a function whose argument and return types differ
+  4. The Supplier interface represents a function that takes no arguments and returns (or “supplies”) a value
+  5. Finally, Consumer represents a function that takes an argument and returns nothing, essentially consuming its argument
+* Always annotate your functional interfaces with the @FunctionalInterface annotation.
+  This annotation type is similar in spirit to @Override. It is a statement of programmer intent that serves three
+  purposes: it tells readers of the class and its documentation that the interface was designed to enable lambdas; it
+  keeps you honest because the interface won’t compile unless it has exactly one abstract method; and it prevents
+  maintainers from accidentally adding abstract methods to the interface as it evolves
+* In summary, now that Java has lambdas, it is imperative that you design your APIs with lambdas in mind. Accept
+  functional interface types on input and return them on output. It is generally best to use the standard interfaces
+  provided in java.util.function.Function, but keep your eyes open for the relatively rare cases where you would be
+  better off writing your own functional interface.
+
+Item 45 - Use streams judiciously <br>
+* This API provides two key abstractions: the stream, which represents a finite or infinite sequence of data elements,
+  and the stream pipeline, which represents a multistage computation on these elements.
+*  Stream pipelines are evaluated lazily: evaluation doesn’t start until the terminal operation is invoked, and data
+   elements that aren’t required in order to complete the terminal operation are never computed
+* The streams API is sufficiently versatile that practically any computation can be performed using streams, but just
+  because you can doesn’t mean you should. When used appropriately, streams can make programs shorter and clearer; when
+  used inappropriately, they can make programs difficult to read and maintain.
+* Overusing streams makes programs hard to read and maintain.
+* So refactor existing code to use streams and use them in new code only where it makes sense to do so.
+*  In summary, some tasks are best accomplished with streams, and others with
+   iteration. Many tasks are best accomplished by combining the two approaches.
+   In many cases, it will be clear which approach to
+   use; in some cases, it won’t. If you’re not sure whether a task is better served
+   by streams or iteration, try both and see which works better.
+
+Item 46 - Prefer side-effect-free functions in streams <br>
+* The most important part of the streams paradigm is to structure your computation as a sequence of transformations where
+  the result of each stage is as close as possible to a pure function of the result of the previous stage.
+  A pure function is one whose result depends only on its input: it does not depend on any mutable state, nor does it
+  update any state. In order to achieve this, any function objects that you pass into stream operations, both intermediate
+  and terminal, should be free of side-effects.
+* The problem stems from the fact that this code is doing all its work in a terminal
+  forEach operation, using a lambda that mutates external state (the frequency table).
+* A forEach operation that does  anything more than present the result of the computation performed by a stream is a
+  “bad smell in code,” as is a lambda that mutates state.
+* The forEach operation should be used only to report the result of a stream computation, not to perform the computation.
+  Occasionally, it makes sense to use forEach for
+* The Collectors API is intimidating: it has 39 methods, some of which have as many as five type parameters. The good
+  news is that you can derive most of the benefit from this API without delving into its full complexity. For starters,
+  you can ignore the Collector interface and think of a collector as an opaque object that encapsulates a reduction
+  strategy. In this context, reduction means combining the elements of a stream into a single object.
+  The object produced by a collector is typically a collection (which accounts for the name collector).
+* It is customary and wise to statically import all members of Collectors because it makes stream pipelines more readable.
+* This simple form of toMap is perfect if each element in the stream maps to a unique key. If multiple stream elements
+  map to the same key, the pipeline will terminate with an IllegalStateException
+* The more complicated forms of toMap, as well as the groupingBy method, give you various ways to provide strategies
+  for dealing with such collisions. One way is to provide the toMap method with a merge function in addition to its key
+  and value mappers. The merge function is a BinaryOperator<V>, where V is the value type of the map. Any additional
+  values associated with a key are combined with the existing value using the merge function, so, for example, if the merge
+  function is multiplication, you end up with a value that is the product of all the values associated with the key
+  by the value mapper.
+*  In summary, the essence of programming stream pipelines is side-effect-free function objects. This applies to all of
+   the many function objects passed to streams and related objects. The terminal operation forEach should only be used
+   to report the result of a computation performed by a stream, not to perform the computation. In order to use streams
+   properly, you have to know about collectors. The most important collector factories are toList, toSet, toMap,
+   groupingBy, and joining.
+
+Item 47 - Prefer Collection to Stream as a return type <br>
+* The Collection interface is a subtype of Iterable and has a stream method, so it provides for both iteration and stream
+  access. Therefore, Collection or an appropriate subtype is generally the best return type for a public, sequence returning
+  method. Arrays also provide for easy iteration and stream access with the Arrays.asList and Stream.of methods.
+* If the sequence you’re returning is small enough to fit easily in memory, you’re probably best off returning one of the
+  standard collection implementations, such as ArrayList or HashSet. But do not store a large sequence in memory just
+  to return it as a collection.
+* In summary, when writing a method that returns a sequence of elements, remember that some of your users may want to
+  process them as a stream while others may want to iterate over them. Try to accommodate both groups. If it’s feasible
+  to return a collection, do so. If you already have the elements in a collection or the number of elements in the
+  sequence is small enough to justify creating a new one, return a standard collection such as ArrayList. Otherwise, consider
+  implementing a custom collection as we did for the power set. If it isn’t feasible to return a collection, return a
+  stream or iterable, whichever seems more natural. If, in a future Java release, the Stream interface declaration is
+  modified to extend Iterable, then you should feel free to return streams because they will allow for both stream
+  processing and iteration.
+
+Item 48 - Use caution when making streams parallel <br>
+* What’s going on here? Simply put, the streams library has no idea how to parallelize this pipeline and the heuristics
+  fail. Even under the best of circumstances, parallelizing a pipeline is unlikely to increase its performance if the
+  source is from Stream.iterate, or the intermediate operation limit is used.
+* The moral of this story is simple: Do not parallelize stream pipelines indiscriminately. The performance consequences
+  may be disastrous.
+  As a rule, performance gains from parallelism are best on streams over ArrayList, HashMap, HashSet, and ConcurrentHashMap
+  instances; arrays; int ranges; and long ranges.
+  What these data structures have in common is that they can all be accurately and cheaply split into subranges of any
+  desired sizes, which makes it easy to divide work among parallel threads.
+* The nature of a stream pipeline’s terminal operation also affects the effectiveness of parallel execution. If a
+  significant amount of work is done in the terminal operation compared to the overall work of the pipeline and that
+  operation is inherently sequential, then parallelizing the pipeline will have limited effectiveness.
+  The best terminal operations for parallelism are reductions, where all of the elements emerging from the pipeline
+  are combined using one of Stream’s reduce methods, or prepackaged reductions such as min, max, count, and sum.
+  The shortcircuiting operations anyMatch, allMatch, and noneMatch are also amenable to parallelism. The operations
+  performed by Stream’s collect method, which are known as mutable reductions, are not good candidates for parallelism
+  because the overhead of combining collections is costly.
+* Not only can parallelizing a stream lead to poor performance, including liveness failures; it can lead to incorrect
+  results and unpredictable behavior (safety failures). Safety failures may result from parallelizing a pipeline that uses
+  mappers, filters, and other programmer-supplied function objects that fail to adhere to their specifications. The
+  Stream specification places stringent requirements on these function objects. For example, the accumulator and combiner
+  functions passed to Stream’s reduce operation must be associative, non-interfering, and stateless. If you violate
+  these requirements (some of which are discussed in Item 46) but run your pipeline sequentially, it will likely yield
+  correct results; if you parallelize it, it will likely fail, perhaps catastrophically
+* Won’t get a good speedup from parallelization unless the pipeline is doing enough
+   real work to offset the costs associated with parallelism. As a very rough estimate,
+   the number of elements in the stream times the number of lines of code executed
+   per element should be at least a hundred thousand
+* In summary, do not even attempt to parallelize a stream pipeline unless you
+  have good reason to believe that it will preserve the correctness of the computation
+  and increase its speed. The cost of inappropriately parallelizing a stream can be a
+  program failure or performance disaster. If you believe that parallelism may be
+  justified, ensure that your code remains correct when run in parallel, and do careful
+  performance measurements under realistic conditions. If your code remains correct
+  and these experiments bear out your suspicion of increased performance, then and
+  only then parallelize the stream in production code.
 
 
 
