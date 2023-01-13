@@ -805,7 +805,157 @@ Item 48 - Use caution when making streams parallel <br>
   and these experiments bear out your suspicion of increased performance, then and
   only then parallelize the stream in production code.
 
+## Chapter 8 - Methods
+Item 49 - Check parameters for validity <br>
+* If an invalid parameter value is passed to a method and the method checks its parameters before execution, it will
+  fail quickly and cleanly with an appropriate exception.
+* If the method fails to check its parameters, several things could happen. The method could fail with a confusing
+   exception in the midst of processing. Worse, the method could return normally but silently compute the wrong result.
+   Worst of all, the method could return normally but leave some object in a compromised state, causing an error at
+   some unrelated point in the code at some undetermined time in the future. In other words, failure to validate parameters,
+   can result in a violation of failure atomicity (Item 76).
+* For public and protected methods, use the Javadoc @throws tag to document the exception that will be thrown if a
+  restriction on parameter values is violated (Item 74). Typically, the resulting exception will be IllegalArgumentException,
+  IndexOutOfBoundsException, or NullPointerException (Item 72).
+* The Objects.requireNonNull method, added in Java 7, is flexible and convenient, so there’s no reason to perform null
+  checks manually anymore. You can specify your own exception detail message if you wish
+* For an unexported method, you, as the package author, control the circumstances under which the method is called, so
+  you can and should ensure that only valid parameter values are ever passed in. Therefore, nonpublic methods
+  can check their parameters using assertions
+* Constructors represent a special case of the principle that you should check the validity of parameters that are to
+  be stored away for later use. It is critical to check the validity of constructor parameters to prevent the
+  construction of an object that violates its class invariants.
+* Do not infer from this item that arbitrary restrictions on parameters are a good thing. On the contrary, you should
+  design methods to be as general as it is practical to make them. The fewer restrictions that you place on parameters, the
+  better, assuming the method can do something reasonable wih all of the parameter values that it accepts. Often,
+  however, some restrictions are intrinsic to the abstraction being implemented.
+* To summarize, each time you write a method or constructor, you should think about what restrictions exist on its
+  parameters. You should document these restrictions and enforce them with explicit checks at the beginning of the method
+  body. It is important to get into the habit of doing this. The modest work that it entails will be paid back with
+  interest the first time a validity check fails
 
+Item 50 - Make defensive copies when needed <br>
+* You must program defensively, with the assumption that clients of your class will do their best to destroy its
+  invariants. This is increasingly true as people try harder to break the security of systems, but more
+  commonly, your class will have to cope with unexpected behavior resulting from the honest mistakes of
+  well-intentioned programmers. Either way, it is worth taking the time to write classes that are robust in the face
+  of ill-behaved clients.
+* As of Java 8, the obvious way to fix this problem is to use Instant (or LocalDateTime or ZonedDateTime) in place of
+  a Date because Instant (and the other java.time classes) are immutable (Item 17).
+  Date is obsolete and should no longer be used in new code.
+* To protect the internals of a Period instance from this sort of attack, it is essential to make a defensive copy of
+  each mutable parameter to the constructor and to use the copies as components of the Period instance in place of the
+  originals
+* Note that defensive copies are made before checking the validity of the parameters (Item 49), and the validity check
+  is performed on the copies rather than on the originals. While this may seem unnatural, it is
+  necessary. It protects the class against changes to the parameters from another thread during the window of
+  vulnerability between the time the parameters are checked and the time they are copied. In the computer security
+  community, this is known as a time-of-check/time-of-use or TOCTOU attack.
+* There may be a performance penalty associated with defensive copying and it isn’t always justified.
+* In summary, if a class has mutable components that it gets from or returns to its clients, the class must
+  defensively copy these components. If the cost of the copy would be prohibitive and the class trusts its clients not
+  to modify the components inappropriately, then the defensive copy may be replaced by documentation outlining the
+  client’s responsibility not to modify the affected components.
+
+Item 51 - Design method signatures carefully <br>
+* Don’t go overboard in providing convenience methods. Every method should “pull its weight.” Too many methods make
+  a class difficult to learn, use, document, test, and maintain. This is doubly true for interfaces, where too many
+  methods complicate life for implementors as well as users. For each action supported by your class or interface,
+  provide a fully functional method. Consider providing a “shorthand” only if it will be used often. When in doubt,
+  leave it out.
+* Avoid long parameter lists. Aim for four parameters or fewer.
+* A third technique that combines aspects of the first two is to adapt the Builder pattern (Item 2) from object
+  construction to method invocation. Once the desired parameters have been set, the client invokes the object’s
+  “execute” method, which does any final validity checks on the parameters and performs the actual computation
+* Prefer two-element enum types to boolean parameters, unless the meaning of the boolean is clear from the method name.
+  Enums make your code easier to read and to write. Also, they make it easy to add more options later.
+
+Item 52 - Use overloading judiciously <br>
+* Because the classify method is overloaded, and the choice of which overloading to invoke is made at compile time.
+  For all three iterations of the loop, the compile-time type of the parameter is the same: Collection<?>. The
+  runtime type is different in each iteration, but this does not affect the choice of overloading. Because the
+  compile-time type of the parameter is Collection<?>, the only applicable overloading is the third one,
+  classify(Collection<?>), and this overloading is invoked in each iteration of the loop.
+* The behavior of this program is counterintuitive because selection among overloaded methods is static, while
+  selection among overridden methods is dynamic.
+  The correct version of an overridden method is chosen at runtime, based on the runtime type of the object on which
+  the method is invoked
+* Because overriding is the norm and overloading is the exception, overriding sets people’s expectations for the
+  behavior of method invocation. As demonstrated by the CollectionClassifier example, overloading can easily confound
+  these expectations. It is bad practice to write code whose behavior is likely to confuse programmers. This is
+  especially true for APIs. If the typical user of an API does not know which of several method overloadings will get
+  invoked for a given set of parameters, use of the API is likely to result in errors.
+* A safe, conservative policy is never to export two overloadings with the same number of parameters. If a method
+  uses varargs, a conservative policy is not to overload it at all, except as described in Item 53. If you adhere to
+  these restrictions, programmers will never be in doubt as to which overloading applies
+  to any set of actual parameters. These restrictions are not terribly onerous because
+  you can always give methods different names instead of overloading them.
+* To summarize, just because you can overload methods doesn’t mean you should. It is generally best to refrain from
+  overloading methods with multiple signatures that have the same number of parameters. In some cases, especially
+  where constructors are involved, it may be impossible to follow this advice. In these cases, you should at least
+  avoid situations where the same set of parameters can be passed to different overloadings by the addition of casts.
+  If this cannot be avoided, for example, because you are retrofitting an existing class to implement a
+  new interface, you should ensure that all overloadings behave identically when passed the same parameters. If
+  you fail to do this, programmers will be hard pressed to make effective use of the overloaded method or constructor,
+  and they won’t understand why it doesn’t work.
+
+Item 53 - Use varargs judiciously <br>
+* Varargs methods, formally known as variable arity methods, accept zero or more arguments of a specified type.
+*  In summary, varargs are invaluable when you need to define methods with a variable number of arguments. Precede
+   the varargs parameter with any required parameters, and be aware of the performance consequences of using varargs.
+
+Item 54 - Return empty collections or arrays not nulls <br>
+* Doing so  (returning a null instead of empty collection) requires extra code in the client to handle the possibly null
+  return value
+* If you were returning a set, you’d use Collections.emptySet; if you were returning a map, you’d use Collections.emptyMap.
+*  In summary, never return null in place of an empty array or collection. It makes your API more difficult to use and
+   more prone to error, and it has no performance advantages.
+
+Item 55 - Return Optionals judiciously <br>
+*  Never return a null value from an Optional-returning method: it defeats the entire purpose of the facility
+*  Container types, including collections, maps, streams, arrays, and optionals should not be wrapped in optionals.
+   Rather than returning an empty Optional<List<T>>, you should simply return an empty List<T> (Item 54).
+* Returning an optional that contains a boxed primitive type is prohibitively expensive compared to returning a
+  primitive type because the optional has two levels of boxing instead of zero
+  Therefore, the library designers saw fit to provide analogues of Optional<T> for the primitive types
+  int, long, and double. These optional types are OptionalInt, OptionalLong, and OptionalDouble. They
+  contain most, but not all, of the methods on Optional<T>.
+  Therefore, you should never return an optional of a boxed primitive type, with the possible exception
+  of the “minor primitive types,” Boolean, Byte, Character, Short, and Float.
+* you should never use optionals as map values. If you do, you have two ways of expressing a key’s
+  logical absence from the map: either the key can be absent from the map, or it can be present and
+  map to an empty optional. This represents needless complexity with great potential for confusion and errors. More
+  generally, it is almost never appropriate to use an optional as a key, value, or element in a collection or array
+* In summary, if you find yourself writing a method that can’t always return a value and you believe it is important
+  that users of the method consider this possibility every time they call it, then you should probably return an optional.
+  You should, however, be aware that there are real performance consequences associated with returning optionals; for
+  performance-critical methods, it may be better to return a null or throw an exception. Finally, you should rarely
+  use an optional in any other capacity than as a return value.
+
+Item 56 - Write doc comments for all exposed API elements <br>
+* To document your API properly, you must precede every exported class, interface, constructor, method, and field
+  declaration with a doc comment. If a class is serializable, you should also document its serialized form (Item 87).
+* The doc comment for a method should describe succinctly the contract between the method and its client. With the
+  exception of methods in classes designed for inheritance (Item 19), the contract should say what the method does
+  rather than how it does its job. The doc comment should enumerate all of the method’s preconditions, which are the
+  things that have to be true in order for a client to invoke it, and its postconditions, which are the things that
+  will be true after the invocation has completed successfully. Typically, preconditions are described implicitly by
+  the @throws tags for unchecked exceptions; each unchecked exception corresponds to a precondition violation. Also,
+  preconditions can be specified along with the affected parameters in their @param tags.
+* To describe a method’s contract fully, the doc comment should have an @param tag for every parameter, an @return
+  tag unless the method has a void return type, and an @throws tag for every exception thrown by the method,
+  whether checked or unchecked (Item 74).
+* This illustrates the general principle that doc comments should be readable both in the source code and in
+  the generated documentation. If you can’t achieve both, the readability of the
+  generated documentation trumps that of the source code.
+* One caveat should be added concerning documentation comments. While it is necessary to provide documentation
+  comments for all exported API elements, it is not always sufficient. For complex APIs consisting of multiple
+  interrelated classes, it is often necessary to supplement the documentation comments with an
+  external document describing the overall architecture of the API. If such a document exists, the relevant class or
+  package documentation comments should include a link to it
+*  To summarize, documentation comments are the best, most effective way to document your API. Their use should be
+   considered mandatory for all exported  API elements. Adopt a consistent style that adheres to standard conventions.
+   Remember that arbitrary HTML is permissible in documentation comments and that HTML metacharacters must be escaped.
 
 TODO Continue the details list  (identation was fixed from what it seems...it wAS caused
 by generics brackets like < > ..i added some spaces and that seemed to fixed it)
