@@ -1145,7 +1145,126 @@ Item 68 - Adhere to general accepted naming conventions <br>
   type, E for the element type of a collection, K and V for the key and value types of a map, and X for an exception.
   The return type of a function is usually R. A sequence of arbitrary types can be T, U, V or T1, T2, T3.
 
+## Chapter 10 - Exceptions
+Item 69 - Use exceptions only for exceptional conditions <br>
+* Because exceptions are designed for exceptional circumstances, there is little incentive for JVM implementors to
+  make them as fast as explicit tests.
+* The moral of this story is simple: Exceptions are, as their name implies, to be used only for exceptional conditions;
+  they should never be used for ordinary control flow.
 
+Item 70 - Use checked exceptions for recoverable conditions and runtime exceptions for programming errors <br>
+* The cardinal rule in deciding whether to use a checked or an unchecked exception is this: use checked exceptions for
+  conditions from which the caller can reasonably be expected to recover. By throwing a checked exception, you
+  force the caller to handle the exception in a catch clause or to propagate it outward. Each checked exception that a
+  method is declared to throw is therefore a potent indication to the API user that the associated condition is a possible
+  outcome of invoking the method.
+* There are two kinds of unchecked throwables: runtime exceptions and errors.
+  They are identical in their behavior: both are throwables that needn’t, and generally shouldn’t, be caught. If a program
+  throws an unchecked exception or an error, it is generally the case that recovery is impossible and continued execution
+  would do more harm than good. If a program does not catch such a throwable, it will cause the current thread to halt
+  with an appropriate error message.
+* Use runtime exceptions to indicate programming errors. The great majority of runtime exceptions indicate precondition
+  violations. A precondition violation is simply a failure by the client of an API to adhere to the contract established
+  by the API specification. For example, the contract for array access specifies that the array index must be between zero
+  and the array length minus one, inclusive. ArrayIndexOutOfBoundsException indicates that this precondition was violated.
+* While the Java Language Specification does not require it, there is a strong convention that errors are reserved for
+  use by the JVM to indicate resource deficiencies, invariant failures, or other conditions that make it impossible to
+  continue execution. Given the almost universal acceptance of this convention, it’s best not to implement any new Error
+  subclasses. Therefore, all of the unchecked throwables you implement should subclass RuntimeException (directly or
+  indirectly). Not only shouldn’t you define Error subclasses, but with the exception of AssertionError, you shouldn’t
+  throw them either.
+* Because checked exceptions generally indicate recoverable conditions, it’s especially important for them to provide
+  methods that furnish information to help the caller recover from the exceptional condition. For example, suppose a checked
+  exception is thrown when an attempt to make a purchase with a gift card fails due to insufficient funds. The exception
+  should provide an accessor method to query the amount of the shortfall. This will enable the caller to relay the amount
+  to the shopper.
+*  To summarize, throw checked exceptions for recoverable conditions and unchecked exceptions for programming errors.
+   When in doubt, throw unchecked exceptions. Don’t define any throwables that are neither checked exceptions nor
+   runtime exceptions. Provide methods on your checked exceptions to aid in recovery.
+
+Item 71 - Avoid unnecessary use of checked exceptions <br>
+* In summary, when used sparingly, checked exceptions can increase the reliability of programs; when overused, they
+  make APIs painful to use. If callers won’t be able to recover from failures, throw unchecked exceptions. If recovery
+  may be possible and you want to force callers to handle exceptional conditions, first consider returning an optional.
+  Only if this would provide insufficient information in the case of failure should you throw a checked exception.
+
+Item 72 - Favor the use of standard exceptions <br>
+* The most commonly reused exception type is IllegalArgumentException (Item 49). This is generally the exception to
+  throw when the caller passes in an argument whose value is inappropriate. For example, this would be the exception
+  to throw if the caller passed a negative number in a parameter representing the number of times some action was to
+  be repeated
+* If a caller passes null in some parameter for which null values are prohibited, convention dictates that
+  NullPointerException be thrown rather than IllegalArgumentException. Similarly, if a caller passes an out-of-range value in
+  a parameter representing an index into a sequence, IndexOutOfBoundsException should be thrown rather than
+  IllegalArgumentException.
+* Do not reuse Exception, RuntimeException, Throwable, or Error directly.
+  Treat these classes as if they were abstract. You can't reliably test for these exceptions because they are superclasses
+  of other exceptions that a method may throw.
+
+Item 73 - Throw exceptions appropriate to the abstraction <br>
+* To avoid this problem, higher layers should catch lower-level exceptions and, in their place, throw exceptions that
+  can be explained in terms of the higher-level abstraction.
+*  If it is impossible to prevent exceptions from lower layers, the next best thing is to have the higher layer silently
+   work around these exceptions, insulating the caller of the higher-level method from lower-level problems. Under these
+   circumstances, it may be appropriate to log the exception using some appropriate logging facility such as
+   java.util.logging. This allows programmers to investigate the problem, while insulating client code and the users from it.
+*  In summary, if it isn’t feasible to prevent or to handle exceptions from lower layers, use exception translation,
+   unless the lower-level method happens to guarantee that all of its exceptions are appropriate to the higher level. Chaining
+   provides the best of both worlds: it allows you to throw an appropriate higher-level
+   exception, while capturing the underlying cause for failure analysis (Item 75).
+
+Item 74 - Document all exceptions thrown by each method <br>
+* Always declare checked exceptions individually, and document precisely the conditions under which each one is thrown
+  using the Javadoc @throws tag.
+  Don’t take the shortcut of declaring that a method throws some superclass of multiple exception classes that it can
+  throw. As an extreme example, don’t declare that a public method throws Exception or, worse, throws Throwable.
+* While the language does not require programmers to declare the unchecked exceptions that a method is capable of
+  throwing, it is wise to document them as carefully as the checked exceptions. Unchecked exceptions generally represent
+  programming errors (Item 70), and familiarizing programmers with all of the errors they can make helps them avoid
+  making these errors.
+  A well-documented list of the unchecked exceptions that a method can throw effectively describes the
+  preconditions for its successful execution.
+* It should be noted that documenting all of the unchecked exceptions that each
+  method can throw is an ideal, not always achievable in the real world.
+* It is particularly important that methods in interfaces document the unchecked
+  exceptions they may throw. This documentation forms a part of the interface’s
+  general contract and enables common behavior among multiple implementations
+  of the interface.
+
+Item 75 - Include failure-capture information in detail messages <br>
+*  One caveat concerns security-sensitive information. Because stack traces may be seen by many people in the process
+   of diagnosing and fixing software issues, do not include passwords, encryption keys, and the like in detail messages.
+
+Item 76 - Strive for failure atomicity <br>
+* After an object throws an exception, it is generally desirable that the object still be in
+  a well-defined, usable state, even if the failure occurred in the midst of performing
+  an operation. This is especially true for checked exceptions, from which the caller is
+  expected to recover. Generally speaking, a failed method invocation should leave
+  the object in the state that it was in prior to the invocation. A method with this
+  property is said to be failure-atomic.
+* There are several ways to achieve this effect. The simplest is to design
+  immutable objects (Item 17). If an object is immutable, failure atomicity is free. If
+  an operation fails, it may prevent a new object from getting created, but it will
+  never leave an existing object in an inconsistent state, because the state of each
+  object is consistent when it is created and can’t be modified thereafter
+* For methods that operate on mutable objects, the most common way to
+  achieve failure atomicity is to check parameters for validity before performing the
+  operation (Item 49). This causes most exceptions to get thrown before object
+  modification commences.
+*  A closely related approach to achieving failure atomicity is to order the computation so that any part that may fail
+   takes place before any part that modifies the object.
+* In summary, as a rule, any generated exception that is part of a method’s specification should leave the object in
+  the same state it was in prior to the method invocation. Where this rule is violated, the API documentation should clearly
+  indicate what state the object will be left in. Unfortunately, plenty of existing API documentation fails to live
+  up to this ideal.
+
+Item 77 - Don't ignore exceptions <br>
+*  An empty catch block defeats the purpose of exceptions, which is to force you to handle exceptional conditions.
+   Ignoring an exception is analogous to ignoring a fire alarm—and turning it off so no one else gets a chance to see if
+   there’s a real fire.
+   Whenever you see an empty catch block, alarm bells should go off in your head.
+*  If you choose to ignore an exception, the catch block should contain a comment explaining why it is appropriate to
+   do so, and the variable should be named ignored:
 
 
 

@@ -3958,7 +3958,7 @@ Item 60 - Avoid float and double if exact answers are required
     convenient than using a primitive arithmetic type, and it’s a lot slower. The latter
     disadvantage is irrelevant if you’re solving a single short problem, but the former may annoy you
 
-    Or you could use int or long and do all calcultions in cents (see code example)
+    Or you could use int or long and do all calculations in cents (see code example)
 
 !!!!
     In summary, don’t use float or double for any calculations that require an exact answer. Use BigDecimal if you want
@@ -4207,8 +4207,7 @@ Item 67 - Optimize judiciously
     There are three aphorisms concerning optimization that everyone should know:
 
         More computing sins are committed in the name of efficiency (without necessarily achieving it) than for any other
-        single reason—including blind stupidity.
-        —William A. Wulf
+        single reason—including blind stupidity.  — William A. Wulf
 
         We should forget about small efficiencies, say about 97% of the time: premature optimization is the root of all evil.
         —Donald E. Knuth
@@ -4255,7 +4254,7 @@ Item 67 - Optimize judiciously
     These tools give you runtime information, such as roughly how much time each method is consuming and how many times
     it is invoked.
 
-    t. The more code in the system, the more important it is to use a profiler.
+    The more code in the system, the more important it is to use a profiler.
     It’s like looking for a needle in a haystack: the bigger the haystack, the more useful
     it is to have a metal detector. Another tool that deserves special mention is jmh,
     which is not a profiler but a microbenchmarking framework that provides
@@ -4333,8 +4332,8 @@ Item 68 - Adhere to generally accepted naming conventions
     BindingAnnotation, Inject, ImplementedBy, or Singleton.
 
     Methods that perform some action are generally named with a verb or verb phrase (including object), for example,
-    append or drawImage. Methods that return a boolean value usually have names that begin with the word is or, less
-    commonly, has, followed by a noun, noun phrase, or any word or phrase that functions
+    append or drawImage. Methods that return a boolean value usually have names that begin with the word "is" or, less
+    commonly, "has", followed by a noun, noun phrase, or any word or phrase that functions
     as an adjective, for example, isDigit, isProbablePrime, isEmpty, isEnabled, or hasSiblings.
 
     There is also a strong precedent for following this naming convention if a class contains both a setter and a getter
