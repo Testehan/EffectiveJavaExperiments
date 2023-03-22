@@ -1266,8 +1266,176 @@ Item 77 - Don't ignore exceptions <br>
 *  If you choose to ignore an exception, the catch block should contain a comment explaining why it is appropriate to
    do so, and the variable should be named ignored:
 
+## Chapter 11 - Concurrency
+Item 78 - Synchronize access to shared mutable data <br>
+* The synchronized keyword ensures that only a single thread can execute a method or block at one time.
+* This view is correct, but it’s only half the story. Without synchronization, one thread’s changes might not be
+  visible to other threads. Not only does synchronization prevent threads from observing an object in an inconsistent
+  state, but it ensures that each thread entering a synchronized method or block sees the effects
+  of all previous modifications that were guarded by the same lock.
+* Synchronization is required for reliable communication between threads as well as for mutual exclusion. This is due to
+  a part of the language specification known as the memory model, which specifies when and how changes made by one
+  thread become visible to others
+* The libraries provide the Thread.stop method, but this method was deprecated long ago because it is inherently
+  unsafe—its use can result in data corruption. Do not use Thread.stop.
+* Note that both the write method (requestStop) and the read method (stopRequested) are synchronized. It is not
+  sufficient to synchronize only the write method! Synchronization is not guaranteed to work unless both read and
+  write operations are synchronized. Occasionally a program that synchronizes only writes (or reads) may appear to
+  work on some machines, but in this case, appearances are deceiving
+* The actions of the synchronized methods in StopThread would be atomic even without synchronization. In other
+  words, the synchronization on these methods is used solely for its communication effects, not for mutual exclusion.
+  While the cost of synchronizing on each iteration of the loop is small, there is a correct alternative that is
+  less verbose and whose performance is likely to be better.
+  The locking in the second version of StopThread can be omitted if stopRequested is declared volatile.
+  While the volatile modifier performs no mutual exclusion, it guarantees that any thread that reads the field will
+  see the most recently written value.
+* The best way to avoid the problems discussed in this item is not to share mutable data.
+  Either share immutable data (Item 17) or don’t share at all.
+  In other words, confine mutable data to a single thread. If you adopt this policy, it is important to document it
+  so that the policy is maintained as your program evolves.
+  It is also important to have a deep understanding of the frameworks and libraries you’re using because they may
+  introduce threads that you are unaware of.
+* In summary, when multiple threads share mutable data, each thread that reads or writes the data must perform
+  synchronization. In the absence of synchronization, there is no guarantee that one thread’s changes will be visible
+  to another thread. The penalties for failing to synchronize shared mutable data are liveness and safety failures.
+  These failures are among the most difficult to debug.
+  They can be intermittent and timing-dependent, and program behavior can vary radically from one VM to another.
+  If you need only inter-thread communication, and not mutual exclusion, the volatile modifier is an acceptable form
+  of synchronization, but it can be tricky to use correctly
 
+Item 79 - Avoid excessive synchronization <br>
+* Item 78 warns of the dangers of insufficient synchronization. This item concerns the opposite problem. Depending on
+  the situation, excessive synchronization can cause reduced performance, deadlock, or even nondeterministic behavior
+* To avoid liveness and safety failures, never cede control to the client within a synchronized method or block.
+  In other words, inside a synchronized region, do not invoke a method that is designed to be overridden, or one provided
+  by a client in the form of a function object (Item 24).
+  From the perspective of the class with the synchronized region, such methods are alien.
+  The class has no knowledge of what the method does and has no control over it. Depending on
+  what an alien method does, calling it from a synchronized region can cause exceptions, deadlocks, or data corruption
+* An alien method might run for an arbitrarily long period. If
+  the alien method were invoked from a synchronized region, other threads would be denied access to the protected
+  resource unnecessarily.
+* As a rule, you should do as little work as possible inside synchronized regions. Obtain the lock, examine the shared
+  data, transform it as necessary, and drop the lock. If you must perform some time-consuming activity, find a way to
+  move it out of the synchronized region without violating the guidelines in Item 78.
+* The first part of this item was about correctness.
+  Now let’s take a brief look at performance. While the cost of synchronization has plummeted since the early
+  days of Java, it is more important than ever not to oversynchronize
+* If a method modifies a static field and there is any possibility that the method will be called from multiple threads,
+  you must synchronize access to the field internally (unless the class can tolerate nondeterministic behavior). It is not
+  possible for a multithreaded client to perform external synchronization on such a method, because unrelated clients
+  can invoke the method without synchronization.
+  The field is essentially a global variable even if it is private because it can be read and modified by unrelated
+  clients.
+* In summary, to avoid deadlock and data corruption, never call an alien method from within a synchronized region.
+  More generally, keep the amount of work that you do from within synchronized regions to a minimum.
+  When you are designing a mutable class, think about whether it should do its own synchronization. In the
+  multicore era, it is more important than ever not to over synchronize. Synchronize your class internally only if
+  there is a good reason to do so, and document your decision clearly (Item 82).
 
+Item 80 - Prefer executors , tasks and streams to threads <br>
+* You can do many more things with an executor service. For example, you can wait for a particular task to complete
+  (with the get method, as shown in Item 79, page 319), you can wait for any or all of a collection of tasks to complete
+  (using the invokeAny or invokeAll methods), you can wait for the executor service to terminate (using the
+  awaitTermination method), you can retrieve the results of tasks one by one as they complete (using an
+  ExecutorCompletionService), you can schedule tasks to run at a particular time or to run periodically (using a
+  ScheduledThreadPoolExecutor), and so on
+* you should generally refrain from working directly with threads. When you work directly with threads, a Thread serves
+  as both a unit of work and the mechanism for executing it. In the executor framework, the unit of work and the execution
+  mechanism are separate. The key abstraction is the unit of work, which is the task.
+  There are two kinds of tasks: Runnable and its close cousin, Callable (which is like Runnable, except that it returns
+  a value and can throw arbitrary exceptions).
+* The general mechanism for executing tasks is the executor service. If you think in terms of tasks and let an executor
+  service execute them for you, you gain the flexibility to select an appropriate execution policy to meet your needs and to
+  change the policy if your needs change. In essence, the Executor Framework does for execution what the Collections
+  Framework did for aggregation.
+* In Java 7, the Executor Framework was extended to support fork-join tasks, which are run by a special kind of
+  executor service known as a fork-join pool. A fork-join task, represented by a ForkJoinTask instance, may be split up into
+  smaller subtasks, and the threads comprising a ForkJoinPool not only process these tasks but “steal” tasks from one
+  another to ensure that all threads remain busy, resulting in higher CPU utilization, higher throughput, and lower latency.
+  Writing and tuning fork-join tasks is tricky. Parallel streams (Item 48) are written atop fork join pools and allow
+  you to take advantage of their performance benefits with little effort, assuming they are appropriate for the task at hand
+
+Item 81 - Prefer concurrency utilities to wait and notify <br>
+* Given the difficulty of using wait and notify correctly, you should use the higher-level concurrency utilities instead.
+* The higher-level utilities in java.util.concurrent fall into three categories: the Executor Framework, which was
+  covered briefly in Item 80; concurrent collections; and synchronizers. Concurrent collections and synchronizers are
+  covered briefly in this item
+* Besides offering excellent concurrency, ConcurrentHashMap is very fast.
+  Concurrent collections make synchronized collections largely obsolete.
+  For example, use ConcurrentHashMap in preference to Collections.synchronizedMap. Simply replacing synchronized maps
+  with concurrent maps can dramatically increase the performance of concurrent applications
+* Synchronizers are objects that enable threads to wait for one another, allowing them to coordinate their activities.
+  The most commonly used synchronizers are CountDownLatch and Semaphore. Less commonly used are CyclicBarrier and
+  Exchanger. The most powerful synchronizer is Phaser
+*  In summary, using wait and notify directly is like programming in “concurrency assembly language,” as compared to
+   the higher-level language provided by java.util.concurrent. There is seldom, if ever, a reason to use wait and
+   notify in new code. If you maintain code that uses wait and notify, make sure that it always invokes "wait" from
+   within a "while loop" using the standard idiom.
+   The notifyAll method should generally be used in preference to "notify". If "notify" is used, great care must be
+   taken to ensure liveness.
+
+Item 82 - Document thread safety <br>
+*  You may hear it said that you can tell if a method is thread-safe by looking for the "synchronized" modifier in
+   its documentation. This is wrong on several counts.
+   The presence of the synchronized modifier in a method declaration is an implementation detail, not a part of its API.
+   It does not reliably indicate that a method is thread-safe.
+* Moreover, the claim that the presence of the synchronized modifier is sufficient to document thread safety embodies
+  the misconception that thread safety is an all-or-nothing property. In fact, there are several levels of thread safety.
+  To enable safe concurrent use, a class must clearly document what level of thread safety it supports. The following
+  list summarizes levels of thread safety.
+  It is not exhaustive but covers the common cases:
+* * Immutable — Instances of this class appear constant. No external synchronization is necessary. Examples include
+  String, Long, and BigInteger (Item 17).
+* * Unconditionally thread-safe — Instances of this class are mutable, but the class has sufficient internal
+  synchronization that its instances can be used concurrently without the need for any external synchronization.
+  Examples include AtomicLong and ConcurrentHashMap.
+* * Conditionally thread-safe — Like unconditionally thread-safe, except that some methods require external
+  synchronization for safe concurrent use. Examples include the collections returned by the Collections.synchronized
+  wrappers, whose iterators require external synchronization.
+* * Not thread-safe — Instances of this class are mutable. To use them concurrently, clients must surround each method
+  invocation (or invocation sequence) with external synchronization of the clients’ choosing. Examples include the
+  general-purpose collection implementations, such as ArrayList and HashMap.
+* * Thread-hostile — This class is unsafe for concurrent use even if every method invocation is surrounded by external
+  synchronization. Thread hostility usually results from modifying static data without synchronization. No one
+  writes a thread-hostile class on purpose; such classes typically result from the failure to consider
+  concurrency. When a class or method is found to be thread-hostile, it is typically fixed or deprecated. The
+  generateSerialNumber method in Item 78 would be thread-hostile in the absence of internal synchronization
+
+Item 83 - Use lazy initialization judiciously <br>
+* Lazy initialization is the act of delaying the initialization of a field until its value is
+  needed. If the value is never needed, the field is never initialized. This technique is
+  applicable to both static and instance fields. While lazy initialization is primarily
+  an optimization, it can also be used to break harmful circularities in class and instance initialization
+* As is the case for most optimizations, the best advice for lazy initialization is “don’t do it unless you need to”
+  (Item 67). Lazy initialization is a double-edged sword. It decreases the cost of initializing a class or creating an
+  instance, at the expense of increasing the cost of accessing the lazily initialized field.
+* That said, lazy initialization has its uses. If a field is accessed only on a fraction of the instances of a class
+  and it is costly to initialize the field, then lazy initialization may be worthwhile. The only way to know for sure
+  is to measure the performance of the class with and without lazy initialization.
+* Under most circumstances, normal initialization is preferable to lazy initialization.
+* In the presence of multiple threads, lazy initialization is tricky. If two or more threads share a lazily initialized
+  field, it is critical that some form of synchronization be employed, or severe bugs can result (Item 78).
+* If you need to use lazy initialization for performance on an instance field, use the double-check idiom. This idiom
+  avoids the cost of locking when accessing the field after initialization (Item 79). The idea behind the idiom is to
+  check the value of the field twice (hence the name double-check): once without locking and then, if the field
+  appears to be uninitialized, a second time with locking. Only if the second check indicates that the field is
+  uninitialized does the call initialize the field. Because there is no locking once the field is initialized, it is
+  critical that the field be declared volatile (Item 78).
+* In summary, you should initialize most fields normally, not lazily. If you must initialize a field lazily in order
+  to achieve your performance goals or to break a harmful initialization circularity, then use the appropriate lazy
+  initialization technique. For instance fields, it is the double-check idiom; for static fields, the
+  lazy initialization holder class idiom. For instance fields that can tolerate repeated initialization, you may also
+  consider the single-check idiom.
+
+Item 84 - Don't depend on the thread scheduler <br>
+* Any program that relies on the thread scheduler for correctness or performance is likely to be nonportable.
+* Threads should not busy-wait, repeatedly checking a shared object waiting for its state to change
+  (see code example in SlowCountdownLatch)
+* In summary, do not depend on the thread scheduler for the correctness of your program. The resulting program will be
+  neither robust nor portable. As a corollary, do not rely on Thread.yield or thread priorities. These facilities are
+  merely hints to the scheduler. Thread priorities may be used sparingly to improve the quality of
+  service of an already working program, but they should never be used to “fix” a program that barely works.
 
 
 TODO Continue the details list  (identation was fixed from what it seems...it wAS caused

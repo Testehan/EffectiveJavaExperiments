@@ -5538,6 +5538,7 @@ TODO    every programmer should be familiar with  the basics of java.lang, java.
 TODO
     Make a list of all items, sort of a TLDR, and add also the summary paragraf or something else important for that item
     the point would be to have that easy access list, when you need to come back to some issues
+    2 chapters left to go
 
 https://stackoverflow.com/questions/11823773/understanding-the-concept-behind-service-provider-framework-like-jdbc-using-the
 https://stackoverflow.com/questions/20772869/what-is-the-use-of-linkedhashmap-removeeldestentry
