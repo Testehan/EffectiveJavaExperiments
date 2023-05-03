@@ -1437,10 +1437,139 @@ Item 84 - Don't depend on the thread scheduler <br>
   merely hints to the scheduler. Thread priorities may be used sparingly to improve the quality of
   service of an already working program, but they should never be used to “fix” a program that barely works.
 
+## Chapter 12 - Serialization
+Item 85 - Prefer alternatives to Java Serialization <br>
+*  Object graphs are deserialized by invoking the readObject method on an ObjectInputStream. This method is essentially a
+   magic constructor that can be made to instantiate objects of almost any type on the class path, so long as the type
+   implements the Serializable interface. In the process of deserializing a byte stream, this method can execute code
+   from any of these types, so the code for all of these types is part of the attack surface.
+*  Java deserialization is a clear and present danger as it is widely used both directly by applications and indirectly
+   by Java subsystems such as RMI (Remote Method Invocation), JMX (Java Management Extension), and
+   JMS (Java Messaging System). Deserialization of untrusted streams can result in remote code execution (RCE),
+   denial-of-service (DoS), and a range of other exploits. Applications can be vulnerable to these attacks even if they
+   did nothing wrong
+* Attackers and security researchers study the serializable types in the Java libraries and in commonly used third-party
+  libraries, looking for methods invoked during deserialization that perform potentially dangerous activities. Such methods
+  are known as gadgets. Multiple gadgets can be used in concert, to form a gadget chain. From time to time, a gadget
+  chain is discovered that is sufficiently powerful to allow an attacker to execute arbitrary native code on the
+  underlying hardware, given only the opportunity to submit a carefully crafted byte stream for deserialization.
+* So what can you do defend against these problems? You open yourself up to attack whenever you deserialize a byte
+  stream that you don’t trust. The best way to avoid serialization exploits is never to deserialize anything. In the
+  words of the computer named Joshua in the 1983 movie WarGames, “the only winning move is not to play.” There is no
+  reason to use Java serialization in any new system you write
+* If you can’t avoid Java serialization entirely, perhaps because you’re working in the context of a legacy system
+  that requires it, your next best alternative is to never deserialize untrusted data. In particular, you should never
+  accept RMI traffic from untrusted sources. The official secure coding guidelines for Java say
+  “Deserialization of untrusted data is inherently dangerous and should be avoided.”
+  This sentence is set in large, bold, italic, red type, and it is the only text in the entire document that gets this
+  treatment.
+* If you can’t avoid serialization and you aren’t absolutely certain of the safety of the data you’re deserializing,
+  use the object deserialization filtering added in Java 9 and backported to earlier releases (java.io.ObjectInputFilter).
+  This facility lets you specify a filter that is applied to data streams before they’re deserialized. It operates at
+  the class granularity, letting you accept or reject certain classes. Accepting classes by default and rejecting a
+  list of potentially dangerous  ones is known as blacklisting; rejecting classes by default and accepting a list of
+  those that are presumed safe is known as whitelisting. Prefer whitelisting to blacklisting, as blacklisting only
+  protects you against known threats.
+*  The filtering facility will also protect you against excessive memory usage, and excessively deep object graphs,
+   but it will not protect you against serialization bombs like the one shown above.
 
-TODO Continue the details list  (identation was fixed from what it seems...it wAS caused
-by generics brackets like < > ..i added some spaces and that seemed to fixed it)
+Item 86 - Implement Serializable with great caution <br>
+*  A major cost of implementing Serializable is that it decreases the flexibility to change a class’s implementation once
+   it has been released. When a class implements Serializable, its byte-stream encoding (or serialized form)
+   becomes part of its exported API. Once you distribute a class widely, you are generally required to support the
+   serialized form forever, just as you are required to support all other parts of the exported API.
+* If you opt to make a class serializable, you should carefully design a high-quality serialized form that
+  you’re willing to live with for the long haul (Items 87, 90).
+* A second cost of implementing Serializable is that it increases the likelihood of bugs and security holes (Item 85).
+  Relying on the default deserialization mechanism can easily leave objects open to invariant corruption and illegal
+  access (Item 88).
+* A third cost of implementing Serializable is that it increases the testing burden associated with releasing a new
+  version of a class.
+* To summarize, the ease of implementing Serializable is specious. Unless a class is to be used only in a protected
+  environment where versions will never have to interoperate and servers will never be exposed to untrusted data,
+  implementing Serializable is a serious commitment that should be made with great care. Extra
+  caution is warranted if a class permits inheritance.
 
+Item 87 - Consider using a custom serialized form <br>
+* Using the default serialized form when an object’s physical representation differs substantially from its logical
+  data content has four disadvantages:
+* * It permanently ties the exported API to the current internal representation. In the above example, the private
+  StringList.Entry class becomes part of the public API. If the representation is changed in a future release, the
+  StringList class will still need to accept the linked list representation on input and generate it on output.
+  The class will never be rid of all the code dealing with linked list entries, even if it doesn’t use them anymore.
+* * It can consume excessive space. In the above example, the serialized form  unnecessarily represents each entry in
+  the linked list and all the links. These entries and links are mere implementation details, not worthy of
+  inclusion in the serialized form. Because the serialized form is excessively large, writing it
+  to disk or sending it across the network will be excessively slow.
+* * It can consume excessive time. The serialization logic has no knowledge of the topology of the object graph,
+  so it must go through an expensive graph traversal. In the example above, it would be sufficient simply to
+  follow the next references.
+* * It can cause stack overflows. The default serialization procedure performs a recursive traversal of the object
+  graph, which can cause stack overflows even for moderately sized object graphs. Serializing a StringList
+  instance with 1,000–1,800 elements generates a StackOverflowError on my machine.
+  Surprisingly, the minimum list size for which serialization causes a stack
+  overflow varies from run to run (on my machine). The minimum list size that
+  exhibits this problem may depend on the platform implementation and
+  command-line flags; some implementations may not have this problem at all.
+* Regardless of what serialized form you choose, declare an explicit serial version UID in every serializable class
+  you write. This eliminates the serial version UID as a potential source of incompatibility (Item 86). There is also a
+  small performance benefit. If no serial version UID is provided, an expensive computation is performed to generate
+  one at runtime.
+* To summarize, if you have decided that a class should be serializable (Item 86), think hard about what the serialized
+  form should be. Use the default serialized form only if it is a reasonable description of the logical state of the
+  object; otherwise design a custom serialized form that aptly describes the object. You should allocate as much time
+  to designing the serialized form of a class as you allocate to designing an exported method (Item 51). Just as you can’t
+  eliminate exported methods from future versions, you can’t eliminate fields from the serialized form; they must be
+  preserved forever to ensure serialization compatibility. Choosing the wrong serialized form can have a permanent, negative
+  impact on the complexity and performance of a class.
+
+Item 88 - Write readObject methods defensively <br>
+* The problem is that the readObject method is effectively another public constructor, and it demands all of the same
+  care as any other constructor. Just as a constructor must check its arguments for validity (Item 49) and make defensive
+  copies of parameters where appropriate (Item 50), so must a readObject method.
+  If a readObject method fails to do either of these things, it is a relatively simple matter for an attacker to violate
+  the class’s invariants
+*  The source of the problem is that Period’s readObject method is not doing enough defensive copying. When an object
+   is deserialized, it is critical to defensively copy any field containing an object reference that a client must
+   not possess. Therefore, every serializable immutable class containing private mutable components must defensively
+   copy these components in its readObject method. The following readObject method suffices to ensure Period’s invariants
+   and to maintain its immutability
+* To summarize, anytime you write a readObject method, adopt the mind-set that you are writing a public constructor
+  that must produce a valid instance regardless of what byte stream it is given. Do not assume that the byte stream
+  represents an actual serialized instance. While the examples in this item concern a class that
+  uses the default serialized form, all of the issues that were raised apply equally to classes with custom serialized
+  forms. Here, in summary form, are the guidelines for writing a readObject method:
+* * For classes with object reference fields that must remain private, defensively copy each object in such a
+  field. Mutable components of immutable classes fall into this category.
+* * Check any invariants and throw an InvalidObjectException if a check fails. The checks should follow any defensive copying.
+* *  If an entire object graph must be validated after it is deserialized, use the ObjectInputValidation interface
+  (not discussed in this book).
+* * Do not invoke any overridable methods in the class, directly or indirectly.
+
+Item 89 - For instance control, prefer enum types to readResolve <br>
+* This method ignores the deserialized object, returning the distinguished Elvis instance that was created when the
+  class was initialized. Therefore, the serialized form of an Elvis instance need not contain any real data; all
+  instance fields should be declared transient. In fact, if you depend on readResolve for instance control, all
+  instance fields with object reference types must be declared transient. Otherwise, it is possible for a determined
+  attacker to secure a reference to the deserialized object before its readResolve method is run, using a
+  technique that is somewhat similar to the MutablePeriod attack in Item 88.
+* (BOOK Explains how such an attack would be performed)
+*  To summarize, use enum types to enforce instance control invariants wherever possible. If this is not possible and you
+   need a class to be both serializable and instance-controlled, you must provide a readResolve method and ensure that all
+   of the class’s instance fields are either primitive or transient.
+
+Item 90 - Consider serialization proxies instead of serialized instances <br>
+* As mentioned in Items 85 and 86 and discussed throughout this chapter, the decision to implement Serializable increases
+  the likelihood of bugs and security problems as it allows instances to be created using an extralinguistic mechanism
+  in place of ordinary constructors. There is, however, a technique that greatly reduces these risks.
+  This technique is known as the serialization proxy pattern.
+*  Like the defensive copying approach (page 357), the serialization proxy approach stops the bogus byte-stream
+   attack (page 354) and the internal field theft attack (page 356) dead in their tracks. Unlike the two previous
+   approaches, this one allows the fields of Period to be final, which is required in order for the
+   Period class to be truly immutable (Item 17).
+*  In summary, consider the serialization proxy pattern whenever you find yourself having to write a readObject or
+   writeObject method on a class that is not extendable by its clients. This pattern is perhaps the easiest way to robustly
+   serialize objects with nontrivial invariants.
 
 
 
